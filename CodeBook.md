@@ -19,7 +19,10 @@ This codebook describe the variables of the tidydata
     * STANDING
     * LAYING
 * **subject** id of volunteer, participate 30 volunteers. Range of values id is 1 to 30.
+
+
 ## Next variables
+
 The following names indicate six possible types of combinations , which will be explained below.
 Measurement original are normalized and bounded within [-1,1]. The values of the variable are the mean
 obtained from activity and subject and phase.
