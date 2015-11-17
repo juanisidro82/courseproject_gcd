@@ -162,7 +162,7 @@ tidydata = tidydataprev %>%
 tidydata$activity = gsub("WALKINGDOWNSTAIRS", "WALKING_DOWNSTAIRS", tidydata$activity)
 tidydata$activity = gsub("WALKINGUPSTAIRS", "WALKING_UPSTAIRS", tidydata$activity)
 
-write.csv(tidydata, file="tidydata.csv")
+write.table(tidydata, file="tidydata.csv", row.names = FALSE)
 
 # end of step 5
 
