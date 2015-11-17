@@ -148,17 +148,31 @@ names(onedataset) = c("subject", "y", "phase", "activity", labelvariables)
 # the average of each variable for each activity and each subject.
 library(reshape2)
 
-onedatasetmelt = melt(onedataset, id=c("subject", "activity"), measure.vars=labelvariables)
-tidydataprev = dcast(onedatasetmelt, variable ~ activity + subject, mean)
+onedatasetmelt = melt(onedataset, id=c("subject", "activity", "phase"), measure.vars=labelvariables)
+tidydataprev = dcast(onedatasetmelt, variable + phase ~ activity + subject, mean)
+
 # the character _ not work well with dcast correctly , when we apply separate function
 names(tidydataprev) = gsub("WALKING_DOWNSTAIRS", "WALKINGDOWNSTAIRS", names(tidydataprev))
 names(tidydataprev) = gsub("WALKING_UPSTAIRS", "WALKINGUPSTAIRS", names(tidydataprev))
 
+# prepare the variables names to split into measure and stat
+tidydataprev$variable = gsub("-mean-X", "-X-mean", tidydataprev$variable)
+tidydataprev$variable = gsub("-mean-Y", "-Y-mean", tidydataprev$variable)
+tidydataprev$variable = gsub("-mean-Z", "-Z-mean", tidydataprev$variable)
+tidydataprev$variable = gsub("-std-X", "-X-std", tidydataprev$variable)
+tidydataprev$variable = gsub("-std-Y", "-Y-std", tidydataprev$variable)
+tidydataprev$variable = gsub("-std-Z", "-Z-std", tidydataprev$variable)
+tidydataprev$variable = gsub("-mean", "_mean", tidydataprev$variable)
+tidydataprev$variable = gsub("-std", "_std", tidydataprev$variable)
+
 library(tidyr)
 tidydata = tidydataprev %>%
-    gather(key=activity_subject, value=mean, -matches("variable")) %>%
-    separate(activity_subject, into=c("activity", "subject"))
-    
+    gather(key=activity_subject, value=average, -matches("variable"), -matches("phase")) %>%
+    filter(!is.na(average)) %>%
+    separate(activity_subject, into=c("activity", "subject")) %>%
+    separate(variable, into=c("measure", "stat"), sep="_") %>%
+    dcast(... ~ stat, value.var="average")
+
 tidydata$activity = gsub("WALKINGDOWNSTAIRS", "WALKING_DOWNSTAIRS", tidydata$activity)
 tidydata$activity = gsub("WALKINGUPSTAIRS", "WALKING_UPSTAIRS", tidydata$activity)
 
