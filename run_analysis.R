@@ -193,7 +193,7 @@ tidydataprev3 = tidydataprev2 %>%
     # change the subffix max by -M
     mutate(denote3=gsub("Mag", "-Mag", denote3)) %>%
     # specify when apply the measurement is raw
-    mutate(denote3=gsub("^-", "Raw-", denote3)) %>%
+    mutate(denote3=gsub("^-", "Fil-", denote3)) %>%
     # separate the type of transform of signal and direction
     separate(denote3, into=c("transform", "direction"), sep="-") 
     
