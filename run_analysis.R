@@ -148,33 +148,63 @@ names(onedataset) = c("subject", "y", "phase", "activity", labelvariables)
 # the average of each variable for each activity and each subject.
 library(reshape2)
 
+# calculate the average for variable for each activity and each subject
 onedatasetmelt = melt(onedataset, id=c("subject", "activity", "phase"), measure.vars=labelvariables)
 tidydataprev = dcast(onedatasetmelt, variable + phase ~ activity + subject, mean)
 
-# the character _ not work well with dcast correctly , when we apply separate function
-names(tidydataprev) = gsub("WALKING_DOWNSTAIRS", "WALKINGDOWNSTAIRS", names(tidydataprev))
-names(tidydataprev) = gsub("WALKING_UPSTAIRS", "WALKINGUPSTAIRS", names(tidydataprev))
-
-# prepare the variables names to split into measure and stat
-tidydataprev$variable = gsub("-mean-X", "-X-mean", tidydataprev$variable)
-tidydataprev$variable = gsub("-mean-Y", "-Y-mean", tidydataprev$variable)
-tidydataprev$variable = gsub("-mean-Z", "-Z-mean", tidydataprev$variable)
-tidydataprev$variable = gsub("-std-X", "-X-std", tidydataprev$variable)
-tidydataprev$variable = gsub("-std-Y", "-Y-std", tidydataprev$variable)
-tidydataprev$variable = gsub("-std-Z", "-Z-std", tidydataprev$variable)
-tidydataprev$variable = gsub("-mean", "_mean", tidydataprev$variable)
-tidydataprev$variable = gsub("-std", "_std", tidydataprev$variable)
-
 library(tidyr)
-tidydata = tidydataprev %>%
+tidydataprev2 = tidydataprev %>%
+    # pass variables names to column names
     gather(key=activity_subject, value=average, -matches("variable"), -matches("phase")) %>%
+    # delete missing values because not all subject participate in train and test
     filter(!is.na(average)) %>%
+    # # the character _ not work well with dcast correctly , when we apply separate function
+    mutate(activity_subject = gsub("WALKING_DOWNSTAIRS", "WALKINGDOWNSTAIRS", activity_subject)) %>%
+    mutate(activity_subject = gsub("WALKING_UPSTAIRS", "WALKINGUPSTAIRS", activity_subject)) %>%
     separate(activity_subject, into=c("activity", "subject")) %>%
-    separate(variable, into=c("measure", "stat"), sep="_") %>%
-    dcast(... ~ stat, value.var="average")
+    mutate(activity=gsub("WALKINGDOWNSTAIRS", "WALKING_DOWNSTAIRS", activity)) %>%
+    mutate(activity = gsub("WALKINGUPSTAIRS", "WALKING_UPSTAIRS", activity))
 
-tidydata$activity = gsub("WALKINGDOWNSTAIRS", "WALKING_DOWNSTAIRS", tidydata$activity)
-tidydata$activity = gsub("WALKINGUPSTAIRS", "WALKING_UPSTAIRS", tidydata$activity)
+tidydataprev3 = tidydataprev2 %>%
+    # prepare the variables names to split into measure and stat
+    mutate(variable = gsub("-mean-X", "-X-mean", variable)) %>%
+    mutate(variable = gsub("-mean-Y", "-Y-mean", variable)) %>%
+    mutate(variable = gsub("-mean-Z", "-Z-mean", variable)) %>%
+    mutate(variable = gsub("-std-X", "-X-std", variable)) %>%
+    mutate(variable = gsub("-std-Y", "-Y-std", variable)) %>%
+    mutate(variable = gsub("-std-Z", "-Z-std", variable)) %>%
+    mutate(variable = gsub("-mean", "_mean", variable)) %>%
+    mutate(variable = gsub("-std", "_std", variable)) %>%
+    separate(variable, into=c("measure", "stat"), sep="_") %>%
+    # separate the prefix t and f, which denote time and frecuency domain signals
+    mutate(measure=gsub("^t", "t_", measure)) %>%
+    mutate(measure=gsub("^f", "f_", measure)) %>%
+    separate(measure, into=c("denote", "measure"), sep="_") %>%
+    # separate measure
+    mutate(measure=gsub("^Body", "Body_", measure)) %>%
+    # exist the name BodyBody to rename Body
+    mutate(measure=gsub("^Body_Body", "Body_", measure)) %>%
+    mutate(measure=gsub("^Gravity", "Gravity_", measure)) %>%
+    separate(measure, into=c("denote2", "measure"), sep="_") %>%
+    # separate sensors
+    mutate(measure=gsub("^Acc", "Acc_", measure)) %>%
+    mutate(measure=gsub("^Gyro", "Gyro_", measure)) %>%
+    separate(measure, into=c("sensor", "denote3"), sep="_") %>%
+    # change the subffix max by -M
+    mutate(denote3=gsub("Mag", "-Mag", denote3)) %>%
+    # specify when apply the measurement is raw
+    mutate(denote3=gsub("^-", "Raw-", denote3)) %>%
+    # separate the type of transform of signal and direction
+    separate(denote3, into=c("transform", "direction"), sep="-") 
+    
+tidydata = tidydataprev3 %>%
+    mutate(denote= gsub("t", "Time", denote)) %>%
+    mutate(denote= gsub("f", "Frecuency", denote)) %>%
+    mutate(stat= gsub("mean", "Mean", stat)) %>%
+    mutate(stat= gsub("std", "Std", stat)) %>%
+    # pass values of the column stat to variable names because mean and std are variables
+    # reference section 3.3 of paper of tidy data http://vita.had.co.nz/papers/tidy-data.pdf
+    dcast(... ~ denote + denote2 + sensor + transform + direction + stat, value.var="average")
 
 write.table(tidydata, file="tidydata.txt", row.names = FALSE)
 
