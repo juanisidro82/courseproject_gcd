@@ -68,7 +68,7 @@ for(phase in phases) {
     # load dataset of files txt for a test or train
     y = savetxt("y", funread="csv", nrow=1000)
     names(y) = "y"
-    subject = savetxt("subject", funread="csv", nrow=100)
+    subject = savetxt("subject", funread="csv", nrow=1000)
     names(subject) = "subject"
     columnas = 8976/16
     X = savetxt("X", funread="fwf", nrow=500, rep(16, columnas))
